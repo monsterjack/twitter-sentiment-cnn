@@ -11,8 +11,8 @@ from tqdm import tqdm
 def log(*string, **kwargs):
     output = ' '.join(string)
     if kwargs.pop('verbose', True):
-        print output
-    LOG_FILE.write(''.join(['\n', output]))
+        print(output)
+#    LOG_FILE.write(''.join(['\n', output]))
 
 
 def weight_variable(shape, name):
@@ -84,6 +84,7 @@ def evaluate_sentence(sentence, vocabulary):
     log('Custom input evaluation:', network_sentiment)
     log('Actual output:', str(unnorm_result[0]))
 
+
 # Hyperparameters
 tf.flags.DEFINE_boolean('train', False,
                         'Train the network (default: False)')
@@ -128,14 +129,15 @@ FLAGS = tf.flags.FLAGS
 OUT_DIR = os.path.abspath(os.path.join(os.path.curdir, 'output'))
 RUN_ID = time.strftime('run%Y%m%d-%H%M%S')
 RUN_DIR = os.path.abspath(os.path.join(OUT_DIR, RUN_ID))
-LOG_FILE_PATH = os.path.abspath(os.path.join(RUN_DIR, 'log.log'))
+#LOG_FILE_PATH = os.path.abspath(os.path.join(RUN_DIR, 'log.log'))
 if FLAGS.load is not None:
-    CHECKPOINT_FILE_PATH = os.path.abspath(os.path.join(FLAGS.load, 'ckpt.ckpt'))
+    CHECKPOINT_FILE_PATH = os.path.abspath(
+        os.path.join(FLAGS.load, 'ckpt.ckpt'))
 else:
     CHECKPOINT_FILE_PATH = os.path.abspath(os.path.join(RUN_DIR, 'ckpt.ckpt'))
 os.mkdir(RUN_DIR)
 SUMMARY_DIR = os.path.join(RUN_DIR, 'summaries')
-LOG_FILE = open(LOG_FILE_PATH, 'a', 0)
+#LOG_FILE = open(LOG_FILE_PATH, 'r', 0)
 
 
 log('======================= START! ========================')
@@ -169,17 +171,17 @@ else:
     device = '/cpu:0'
 
 # Log run data
-log('\nFlags:')
-for attr, value in sorted(FLAGS.__flags.iteritems()):
-    log('\t%s = %s' % (attr, value._value))
-log('\nDataset:')
-log('\tTrain set size = %d\n'
-    '\tTest set size = %d\n'
-    '\tVocabulary size = %d\n'
-    '\tInput layer size = %d\n'
-    '\tNumber of classes = %d' %
-    (len(y_train), len(y_test), len(vocabulary), sequence_length, num_classes))
-log('\nOutput folder:', RUN_DIR)
+# log('\nFlags:')
+# for attr, value in sorted(FLAGS.__flags.iteritems()):
+#    log('\t%s = %s' % (attr, value._value))
+# log('\nDataset:')
+# log('\tTrain set size = %d\n'
+#     '\tTest set size = %d\n'
+#     '\tVocabulary size = %d\n'
+#     '\tInput layer size = %d\n'
+#     '\tNumber of classes = %d' %
+#     (len(y_train), len(y_test), len(vocabulary), sequence_length, num_classes))
+# log('\nOutput folder:', RUN_DIR)
 
 # Session
 sess = tf.InteractiveSession()
@@ -205,7 +207,7 @@ with tf.device(device):
 
     # Convolution + ReLU + Pooling layer
     pooled_outputs = []
-    for i, filter_size in enumerate(filter_sizes):
+    for i, filter_size in enumerate(map(int, FLAGS.filter_sizes.split(','))):
         with tf.name_scope('conv-maxpool-%s' % filter_size):
             # Convolution Layer
             filter_shape = [filter_size,
@@ -234,7 +236,8 @@ with tf.device(device):
         pooled_outputs.append(pooled)
 
     # Combine the pooled feature tensors
-    num_filters_total = FLAGS.num_filters * len(filter_sizes)
+    num_filters_total = FLAGS.num_filters * \
+        len(list(map(int, FLAGS.filter_sizes.split(','))))
     h_pool = tf.concat(pooled_outputs, 3)
     h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
 
